@@ -32,46 +32,65 @@ def load_models():
 
     model_client = ModelServer(model_info_list)
 
-
+#TODO Use grpc
 def init_server_and_listen():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Create a socket object
     s.bind((constants.host, constants.port))  # Bind to the port
     s.listen(5)  # Now wait for client connection.
 
     print('Server listening....')
+    model_name=''
+    input_values=[]
 
     try:
         while True:
-
             conn, addr = s.accept()  # Establish connection with client
 
-            #we will be reading input values / tensors
-            header_data = conn.recv(constants.header_size)
-            header_str = header_data.decode().strip()
+            int_byte_arr = conn.recv(4)
 
-            total_bytes_received = b''
+            if int_byte_arr.endswith(b'Done'):
+                print("Done")
+                break
 
-            while len(total_bytes_received) < no_of_top_file_bytes:
-                remaining_bytes_to_read = no_of_top_file_bytes - len(total_bytes_received)
+            if len(int_byte_arr)<4:
+                print("Error. Header has less than 4 bytes. need to handle this")
+                break
 
-                if remaining_bytes_to_read > constants.data_size:
-                    read_data = constants.data_size
-                else:
-                    read_data = remaining_bytes_to_read
+            meta_data_len = int.from_bytes(int_byte_arr, byteorder='little')
 
-                file_data = conn.recv(read_data)
+            meta_data_byte_arr = conn.recv(meta_data_len)
 
-                if not file_data:
-                    break
+            meta_data_str = meta_data_byte_arr.decode('utf-8')
+            meta_data = meta_data_str.split(",")
 
-                if file_data.endswith(b'Done'):
-                    file_data_temp = file_data.replace(b'Done', b'')
-                    total_bytes_received = total_bytes_received + file_data_temp
-                else:
-                    total_bytes_received = total_bytes_received + file_data
+            no_of_files = int(meta_data[0])
 
-                if file_data.endswith(b'Done'):
-                    break
+            total_bytes_received_image = b''
+            curr_file_count = 1
+            while curr_file_count <= no_of_files:
+                no_of_file_bytes = int(meta_data[curr_file_count])
+                out_name = str(curr_file_count)
+
+                while len(total_bytes_received_image) < no_of_file_bytes:
+                    remaining_bytes_to_read = no_of_file_bytes - len(total_bytes_received_image)
+
+                    if remaining_bytes_to_read > constants.data_size:
+                        read_data = constants.data_size
+                    else:
+                        read_data = remaining_bytes_to_read
+
+                    file_data = conn.recv(read_data)
+
+                    if not file_data:
+                        break
+
+                    total_bytes_received_image = total_bytes_received_image + file_data
+
+                final_images = total_bytes_received_image
+
+                img = pickle.loads(final_images)
+                curr_file_count += 1
+
 
             model_infer(model_name, input_values, conn)
     except Exception as e:
