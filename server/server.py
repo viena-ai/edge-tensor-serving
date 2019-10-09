@@ -24,9 +24,11 @@ def load_models():
     model_conf_list = model_data['model_conf_list']
 
     model_info_list = []
+    # model_info_list = dict()
 
     for model in model_conf_list:
         model_info_list.append(model_conf_list[model])
+        # model_info_list[model] = model_conf_list[model]
 
     print(model_info_list)
 
@@ -91,7 +93,6 @@ def init_server_and_listen():
                 img = pickle.loads(final_images)
                 curr_file_count += 1
 
-
             model_infer(model_name, input_values, conn)
     except Exception as e:
         traceback.print_exc()
@@ -129,4 +130,4 @@ def send_response_back_to_client(conn, total_bytes_received):
 
 if __name__ == '__main__':
     load_models()
-    init_server_and_listen()
+    # init_server_and_listen()

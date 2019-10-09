@@ -78,7 +78,8 @@ def inspect_models(model_path):
 
 
 if __name__ == '__main__':
-    model_path = "/home/viena/tf_files/model_1/1"
+    # model_path = "/home/viena/tf_files/model_1/1"
+    model_path = "/home/viena/tf_files/model_2/1"
     tag_set, method_name, input_params, output_params = inspect_models(model_path)
 
     print(model_path)
